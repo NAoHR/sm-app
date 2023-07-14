@@ -1,0 +1,17 @@
+*.idea
+*.iml
+*.log
+*.class
+*.jar
+*.zip
+*.gz
+*.lst
+*.original
+*.properties
+
+
+**/**/target/**
+**/**/log/**
+**/**/logs/**
+**/.DS_Store
+**/.gitignore
