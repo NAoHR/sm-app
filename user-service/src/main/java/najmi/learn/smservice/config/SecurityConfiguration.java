@@ -17,14 +17,15 @@ import org.springframework.security.web.authentication.logout.LogoutHandler;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
-    private final AuthenticationProvider authenticationProvider; // to do
+    private final AuthenticationProvider authenticationProvider;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-//    private final LogoutHandler logoutHandler; // to do
+    private final LogoutHandler logoutHandler;
 
 
     private static final String[] whiteList = {
             "/api/v1/auth/register",
-            "/api/v1/auth/login"
+            "/api/v1/auth/login",
+            "/api/v1/user/**",
     };
 
     @Bean
@@ -42,14 +43,14 @@ public class SecurityConfiguration {
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 .and()
                 .authenticationProvider(authenticationProvider)
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-//                .logout()
-//                .logoutUrl("/auth/logout") // gaperlu nambah endpoint
-//                .addLogoutHandler(logoutHandler)
-//                .logoutSuccessHandler((request, response, authentication) -> {
-//                    SecurityContextHolder.clearContext();
-//                    response.getWriter().write("Waduh rekk, pentol e iki guede banget");
-//                });
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .logout()
+                .logoutUrl("/api/v1/auth/logout") // gaperlu nambah endpoint
+                .addLogoutHandler(logoutHandler)
+                .logoutSuccessHandler((request, response, authentication) -> {
+                    SecurityContextHolder.clearContext();
+                    response.getWriter().write("Waduh rekk, pentol e iki guede banget");
+                });
         return http.build();
     }
 }

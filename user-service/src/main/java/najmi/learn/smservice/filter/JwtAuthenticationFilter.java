@@ -1,13 +1,16 @@
 package najmi.learn.smservice.filter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import najmi.learn.smservice.entity.TokenEntity;
 import najmi.learn.smservice.entity.UserEntity;
+import najmi.learn.smservice.model.BaseResponse;
 import najmi.learn.smservice.repo.TokenRepo;
 import najmi.learn.smservice.service.JwtService;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -16,6 +19,7 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import javax.lang.model.type.NullType;
 import javax.servlet.FilterChain;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +37,21 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final RedisTemplate<String, String> template;
 
+    private void loginAgain(@NonNull HttpServletResponse response){
+        try{
+            BaseResponse<Object> body = BaseResponse.builder()
+                    .ok(false)
+                    .data(null)
+                    .error("Session Expired, please login agai")
+                    .message("Unauthorized")
+                    .build();
+            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+            response.getWriter().write(new ObjectMapper().writeValueAsString(body));
+        }catch (IOException e){
+            log.error("ada error {}", e);
+        }
+    }
+
     @Override
     protected void doFilterInternal(
             @NonNull HttpServletRequest request,
@@ -49,7 +68,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         jwt = authorization.substring(7);
-        userEmail = jwtService.extraxtUsername(jwt);
+        try{
+            userEmail = jwtService.extraxtUsername(jwt);
+        }catch (Exception e){
+            loginAgain(response);
+            return;
+        }
+
         if(userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null){
             UserDetails userDetails = userDetailsService.loadUserByUsername(userEmail);
             TokenEntity tokenDb = tokenRepo.findByToken(jwt).orElse(null);
@@ -60,12 +85,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             if(tokenDb.isExpired() || tokenDb.isRevoked()){
-                System.out.println("weww");
                 filterChain.doFilter(request, response);
                 return;
             }
             if(template.opsForValue().get(String.format("user:%s:token", ((UserEntity) userDetails).getId() )) == null){
-                System.out.println("wadidaw");
                 template.opsForValue().getAndDelete(String.format("user:%s:token", ((UserEntity) userDetails).getId() ));
                 tokenDb.setExpired(true);
                 tokenDb.setRevoked(true);

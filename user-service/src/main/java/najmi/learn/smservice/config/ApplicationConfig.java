@@ -1,6 +1,8 @@
 package najmi.learn.smservice.config;
 
 import lombok.RequiredArgsConstructor;
+import najmi.learn.smservice.entity.TokenEntity;
+import najmi.learn.smservice.repo.TokenRepo;
 import najmi.learn.smservice.repo.UserEntityRepository;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,19 +14,26 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 @Configuration
 @RequiredArgsConstructor
 public class ApplicationConfig {
     private final UserEntityRepository userEntityRepository;
+    private final TokenRepo tokenRepo;
     @Value("${spring.redis.host}")
     private String redisHost;
 
@@ -73,5 +82,30 @@ public class ApplicationConfig {
 
         return template;
 
+    }
+
+    @Bean
+    public LogoutHandler logoutService(
+            ){
+        return (
+                @NonNull HttpServletRequest request,
+                @NonNull HttpServletResponse response,
+                @NonNull Authentication authentication
+        ) -> {
+            final String authorization = request.getHeader("Authorization");
+            final String jwt;
+
+            if(authorization != null && authorization.startsWith("Bearer ")){
+                jwt = authorization.substring(7);
+                TokenEntity stored = tokenRepo.findByToken(jwt).orElse(null);
+
+                if(stored != null){
+                    stored.setRevoked(true);
+                    stored.setExpired(true);
+                    tokenRepo.save(stored);
+
+                }
+            }
+        };
     }
 }

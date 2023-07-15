@@ -5,9 +5,12 @@ import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.security.Key;
 import java.util.Date;
@@ -16,6 +19,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 @Service
+@Slf4j
 public class JwtService {
     @Value("${spring.security.secret-key}")
     private String SECRET_KEY;
@@ -64,12 +68,17 @@ public class JwtService {
     }
 
     private Claims extractAllClaims(String jwt){
-        return Jwts
-                .parserBuilder()
-                .setSigningKey(getSigninKey())
-                .build()
-                .parseClaimsJws(jwt)
-                .getBody();
+        try{
+            return Jwts
+                    .parserBuilder()
+                    .setSigningKey(getSigninKey())
+                    .build()
+                    .parseClaimsJws(jwt)
+                    .getBody();
+        }catch (Exception e){
+            log.info("token error: {}", e);
+            return null;
+        }
     }
 
     private Key getSigninKey() {
