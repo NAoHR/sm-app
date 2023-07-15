@@ -1,0 +1,11 @@
+logging:
+  level:
+    okhttp3: info
+    com.indivaragroup.bpi.idp.restclient: info
+user:
+  httpClient:
+    baseUrl: http://localhost:8080/
+    connectTimeoutInMilliseconds: 5000
+    readTimeoutInMilliseconds: 5000
+    logLevel: BODY
+
