@@ -8,6 +8,8 @@ import najmi.learn.smservice.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+
 @RestController
 @RequestMapping("/api/v1/auth")
 @RequiredArgsConstructor
@@ -28,8 +30,10 @@ public class AuthController {
         return ResponseEntity.ok(authService.login(request));
     }
 
-    @GetMapping("/waduh")
-    public ResponseEntity<Object> waduh(){
-        return ResponseEntity.ok(null);
+    @GetMapping("/refresh")
+    public ResponseEntity<Object> refresh(
+            HttpServletRequest request
+    ){
+        return ResponseEntity.ok(authService.refresh(request));
     }
 }

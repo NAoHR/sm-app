@@ -7,6 +7,7 @@ import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
@@ -21,11 +22,14 @@ import java.util.function.Function;
 @Service
 @Slf4j
 public class JwtService {
-    @Value("${spring.security.secret-key}")
+    @Value("${spring.security.jwt.secret-key}")
     private String SECRET_KEY;
 
-    @Value("${spring.security.expired}")
-    private Long EXPIRED;
+    @Value("${spring.security.jwt.expiration}")
+    private Long EXPIRATION_ACCESS;
+
+    @Value("${spring.security.jwt.refresh-token.expiration}")
+    private Long EXPIRATION_REFRESH;
 
     public String extraxtUsername(String jwt){
         return extractClaim(jwt, Claims::getSubject);
@@ -43,12 +47,26 @@ public class JwtService {
             Map<String, Object> extraClaims,
             UserDetails userDetails
     ) {
+        return buildToken(extraClaims, userDetails, EXPIRATION_ACCESS);
+    }
+
+    public String generateRefreshToken(
+            UserDetails userDetails
+    ) {
+        return buildToken(new HashMap<>(), userDetails, EXPIRATION_REFRESH);
+    }
+
+    private String buildToken(
+            Map<String, Object> extraClaims,
+            UserDetails userDetails,
+            long expiration
+    ){
         return Jwts
                 .builder()
                 .setClaims(extraClaims)
                 .setSubject(userDetails.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRED))
+                .setExpiration(new Date(System.currentTimeMillis() + expiration))
                 .signWith(getSigninKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

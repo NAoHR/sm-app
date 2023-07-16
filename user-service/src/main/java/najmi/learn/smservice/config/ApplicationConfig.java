@@ -1,9 +1,14 @@
 package najmi.learn.smservice.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import najmi.learn.smservice.entity.TokenEntity;
+import najmi.learn.smservice.entity.UserEntity;
+import najmi.learn.smservice.model.BaseResponse;
 import najmi.learn.smservice.repo.TokenRepo;
 import najmi.learn.smservice.repo.UserEntityRepository;
+import najmi.learn.smservice.service.JwtService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +19,7 @@ import org.springframework.data.redis.connection.jedis.JedisConnectionFactory;
 import org.springframework.data.redis.core.RedisOperations;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.serializer.StringRedisSerializer;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
@@ -25,15 +31,22 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
+import org.springframework.web.server.ResponseStatusException;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.util.List;
+import java.util.UUID;
 
 @Configuration
 @RequiredArgsConstructor
+@Slf4j
 public class ApplicationConfig {
     private final UserEntityRepository userEntityRepository;
     private final TokenRepo tokenRepo;
+
+    private final JwtService jwtService;
     @Value("${spring.redis.host}")
     private String redisHost;
 
@@ -99,13 +112,23 @@ public class ApplicationConfig {
                 jwt = authorization.substring(7);
                 TokenEntity stored = tokenRepo.findByToken(jwt).orElse(null);
 
-                if(stored != null){
-                    stored.setRevoked(true);
-                    stored.setExpired(true);
-                    tokenRepo.save(stored);
-
+                if(stored != null && (!stored.isExpired() || !stored.isRevoked())){
+                    revokeAllUserToken(stored.getUser().getId());
                 }
             }
         };
+    }
+
+    private void revokeAllUserToken(UUID uuid){
+        List<TokenEntity> userTokens = tokenRepo.findAllValidTokenByUser(uuid);
+        if(!userTokens.isEmpty()){
+            userTokens.forEach(token -> {
+                token.setRevoked(true);
+                token.setExpired(true);
+            });
+
+            tokenRepo.saveAll(userTokens);
+        }
+
     }
 }
