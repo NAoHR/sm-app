@@ -20,6 +20,8 @@ public class TokenEntity {
     private String token;
     private boolean revoked;
     private boolean expired;
+    @Column(name = "token_type")
+    private String tokenType;
 
     @ManyToOne
     @JoinColumn(name = "user_id")

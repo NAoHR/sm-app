@@ -1,22 +1,38 @@
+db:
+  host: localhost
+  port: 5432
+  name: app-dev
+  username: postgres
+  password: 1234
+  schema: my_user
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/app-dev
-    username: postgres
-    password: 1234
+    url: jdbc:postgresql://${db.host}:${db.port}/${db.name}?currentSchema=${db.schema}
+    username: ${db.username}
+    password: ${db.password}
     driver-class-name: org.postgresql.Driver
   jpa:
-    hibernate:
-      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
-        default_schema: my_user
         format-sql: true
     database: postgresql
     database-platform: org.hibernate.dialect.PostgreSQLDialect
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 1.0
+    placeholder-replacement: false
+    user: ${db.username}
+    password: ${db.password}
+    url: jdbc:postgresql://${db.host}:${db.port}/${db.name}?currentSchema=${db.schema}
+    schemas: ${db.schema}
   redis:
     host: 127.0.0.1
     port: 6379
   security:
-    secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-    expired: 86400000
+    jwt:
+      secret-key: 404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      expiration: 86400000
+      refresh-token:
+        expiration: 604800000

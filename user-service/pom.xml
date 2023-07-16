@@ -15,6 +15,7 @@
 	<description>servis social media rek</description>
 	<properties>
 		<java.version>11</java.version>
+		<flyway-core.version>9.17.0</flyway-core.version>
 	</properties>
 	<dependencies>
 		<dependency>
@@ -75,6 +76,11 @@
 			<groupId>redis.clients</groupId>
 			<artifactId>jedis</artifactId>
 			<version>3.7.0</version>
+		</dependency>
+		<dependency>
+			<artifactId>flyway-core</artifactId>
+			<groupId>org.flywaydb</groupId>
+			<version>${flyway-core.version}</version>
 		</dependency>
 	</dependencies>
 
