@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
+import okhttp3.logging.HttpLoggingInterceptor.Level;
 
 import java.util.concurrent.TimeUnit;
 
@@ -21,17 +22,17 @@ public class UserServiceClientConfig {
     private long connectTimeoutInMilliseconds;
     private long readTimeoutInMilliseconds;
     private String logLevel;
-
     @Bean
-    public OkHttpClient userHttpClient(UserServiceClientConfig config){
+    public OkHttpClient userHttpClient(UserServiceClientConfig configuration) {
         final HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.valueOf(logLevel));
+        interceptor.setLevel(Level.valueOf(configuration.getLogLevel()));
 
-        return new OkHttpClient().newBuilder()
+        return new OkHttpClient
+                .Builder()
                 .addInterceptor(interceptor)
-                .connectTimeout(config.getConnectTimeoutInMilliseconds(), TimeUnit.MILLISECONDS)
-                .readTimeout(config.getReadTimeoutInMilliseconds(), TimeUnit.MILLISECONDS)
-                .writeTimeout(config.getReadTimeoutInMilliseconds(), TimeUnit.MILLISECONDS)
+                .connectTimeout(configuration.getConnectTimeoutInMilliseconds(), TimeUnit.MILLISECONDS)
+                .readTimeout(configuration.getReadTimeoutInMilliseconds(), TimeUnit.MILLISECONDS)
+                .writeTimeout(configuration.getReadTimeoutInMilliseconds(), TimeUnit.MILLISECONDS)
                 .build();
     }
 
